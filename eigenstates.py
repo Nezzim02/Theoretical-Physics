@@ -16,11 +16,11 @@ dx=a/N             # step length
 dx2=dx**2          # step length squared
 
 #EeV=(hbar*np.pi/a)**2/(2.0*m)/e
-EeV = 0.376          # input energy in eV: test 0.3 , 0.4 , 0.3760 , 1.5
+EeV = 2.5        # input energy in eV: test 0.3 , 0.4 , 0.3760 , 1.5
 
 # Bisection method for finding eigenenergivalues
-E_a = 0.3
-E_b = 0.4  # E_b > E_a
+E_a = 2
+E_b = 4  # E_b > E_a
 counter = 0
 psi_tab = [1]
 while abs(psi_tab[-1]) > 1e-20:
@@ -37,7 +37,7 @@ while abs(psi_tab[-1]) > 1e-20:
     psi_tab = []        # list to store wave function for plot
     x_tab.append(x/a)
     psi_tab.append(psi)
-    counter += 0
+    counter += 1
 
     # potential energy function
     def V(x):
@@ -57,19 +57,20 @@ while abs(psi_tab[-1]) > 1e-20:
     
     dE = psi_tab[-1] - psi_tab[-2]
     if dE < 0:
-        lowerb = E_b
-        upperb = E_a
+        if psi_tab[-1] < 0:
+            E_b = EeV
+            EeV = (E_b + E_a)/2
+        elif psi_tab[-1] > 0:
+            E_a = EeV
+            EeV = (E_b + E_a)/2
     elif dE > 0:
-        lowerb = E_a
-        upperb = E_b
+        if psi_tab[-1] < 0:
+            E_a = EeV
+            EeV = (E_b + E_a)/2
+        elif psi_tab[-1] > 0:
+            E_b = EeV
+            EeV = (E_b + E_a)/2
     print(EeV)
-
-    if psi_tab[-1] < 0:
-        upperb = EeV
-        EeV = (upperb + lowerb)/2
-    elif psi_tab[-1] > 0:
-        lowerb = EeV
-        EeV = (lowerb + upperb)/2
 
 #print('Exact solution for infinite box potential')
 print('E1=',(hbar*np.pi/a)**2/(2*m)/e,'eV')
