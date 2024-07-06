@@ -1,0 +1,100 @@
+# Python simulation of an electron in a 1d infinite box potential
+# Integrate time-independent SE using the Verlet method
+# Boundary conditions are found by shooting
+# MW 230519
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+a=1.0e-9           # well width a=1 nm
+hbar=1.0545718e-34 # Plancks constant
+m=9.10938356e-31   # electron mass
+e=1.60217662e-19   # electron charge=-e
+c=2.0*m/hbar**2    # constant in Schrödinger equation
+#N=10               # number of mesh points
+N_ls=[10, 100, 1000, 10000, 100000]
+#dx=a/N             # step length
+dx_ls=[a/x for x in N_ls]
+#dx2=dx**2          # step length squared
+dx2_ls=[y**2 for y in dx_ls]
+
+# potential energy function
+def V(x):
+    y = 0.0
+    #y = x**2/2 # harmonic oscillator
+    #y = x**2/2 + x**4 # anharmonic oscillator
+    return y
+
+psi_err = []
+
+for i in range(len(N_ls)):
+    N = N_ls[i]
+    dx = dx_ls[i]
+    dx2 = dx2_ls[i]
+
+    def _psi(EeV):
+        #EeV=(hbar*np.pi/a)**2/(2.0*m)/e
+        E = EeV*e            # input energy in J
+
+        # initial values and lists
+        x = 0               # initial value of position x
+        psi = 0.0           # wave function at initial position
+        dpsi = 1.0          # derivative of wave function at initial position
+        x_tab = []          # list to store positions for plot
+        psi_tab = []        # list to store wave function for plot
+        x_tab.append(x/a)
+        psi_tab.append(psi)
+
+        return sch_solver(psi, psi_tab, x, x_tab, E, dpsi)
+
+    def sch_solver(psi, psi_tab, x, x_tab, E, dpsi):
+        for i in range(N):
+            d2psi = c*(V(x)-E)*psi
+            psi += dpsi*dx + 0.5*d2psi*dx2
+            d2psinew = c*(V(x+dx)-E)*psi
+            dpsi += 0.5*(d2psi+d2psinew)*dx
+            x += dx
+            x_tab.append(x/a)
+            psi_tab.append(psi)
+
+        #print('Exact solution for infinite box potential')
+        print('E1=',(hbar*np.pi/a)**2/(2*m)/e,'eV')
+        #print('E2=',(hbar*2*np.pi/a)**2/(2*m)/e,'eV')
+
+        print('E=',E/e,'eV , psi(x=a)=',psi)
+        
+        return psi
+
+
+    #EeV = 0.370        # input energy in eV: test 0.3 , 0.4 , 0.3760 , 1.5
+    E_b, E_a = 0.5, 0.1
+
+    while E_b - E_a > 1e-14:
+        E_mid = (E_b + E_a)/2
+        psi_mid = _psi(E_mid)
+        psi_a = _psi(E_a)
+
+        if psi_mid * psi_a < 0:
+            E_b = E_mid
+        else:
+            E_a = E_mid
+
+    psi_err.append(abs(psi_mid))
+
+
+plt.close()
+plt.figure(num=None, figsize=(8,8), dpi=80, facecolor='w', edgecolor='k')
+plt.loglog(N_ls, psi_err, linewidth=0, color='red', marker='o')
+#plt.xlim(0, 1)
+#limit=1.e-9
+#plt.ylim(0, limit)
+#plt.ylim(-limit, limit)
+#plt.autoscale(False)
+plt.xlabel('Amount of mesh points, N')
+plt.ylabel('Error of $\psi$')
+#plt.savefig('psi.pdf')
+
+k = 1e-21
+theory_err_psi = [k / (n^2) for n in N_ls]
+plt.loglog(N_ls, theory_err_psi, linewidth=1, color='blue', marker='x')
+plt.show()
